@@ -12,6 +12,8 @@ import androidx.fragment.app.FragmentManager;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,6 +25,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.MediaController;
+import android.widget.Toast;
 import android.widget.VideoView;
 //import android.widget.AdapterView.OnItemSelectedListener;
 
@@ -31,6 +35,7 @@ import com.google.android.material.navigation.NavigationBarView;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -48,7 +53,9 @@ public class MainActivity extends AppCompatActivity {
     ImageView imageView;
     VideoView videoView;
     ActivityResultLauncher<Intent> launchSomeActivity;
-    int requestCode;
+    ActivityResultLauncher<Intent> launchSomeActivity2;
+    ActivityResultLauncher<Intent> launchSomeActivity3;
+
     Uri photoUri;
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
@@ -71,8 +78,17 @@ public class MainActivity extends AppCompatActivity {
         fragment3=new FragmentCamera();
 
         imageView=(ImageView) findViewById(R.id.imageView);
+        videoView=(VideoView) findViewById(R.id.videoView);
+        MediaController controller = new MediaController(MainActivity.this);
+        videoView.setMediaController(controller);
+        videoView.requestFocus();
+
+        imageView.setVisibility(View.GONE);
+        videoView.setVisibility(View.GONE);
 
         //an alternative of deprecated startActivityForResult()
+
+        //REQUEST_IMAGE_GALLERY
         launchSomeActivity = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 new ActivityResultCallback<ActivityResult>() {
@@ -82,40 +98,90 @@ public class MainActivity extends AppCompatActivity {
                             Intent data = result.getData();
                             Log.d("getResultCode", String.valueOf(result.getResultCode()));
                             Log.d("data", String.valueOf(data));
+                            Log.d("requestCode", String.valueOf(data.getStringExtra("requestCode")));
+                            Log.d("requestCode", String.valueOf(data.getDataString())); ////////
+                            Log.d("requestCode", String.valueOf(data.getExtras()));
+                            try{
+                                    InputStream in = getContentResolver().openInputStream(data.getData());
+                                    Bitmap img = BitmapFactory.decodeStream(in);
+                                    in.close();
+                                    imageView.setImageBitmap(img);
+                                    imageView.setVisibility(View.VISIBLE);
+                                    videoView.setVisibility(View.GONE);
 
-                            if(result.getResultCode() == RESULT_OK){
-                                switch(requestCode){
-                                    case REQUEST_IMAGE_GALLERY:
-                                        break;
-                                    case REQUEST_IMAGE_CAPTURE:
-//                                        Bundle extras = data.getExtras();
-//                                        Bitmap imageBitmap = (Bitmap) extras.get("data");
-//                                        imageView.setImageBitmap(imageBitmap);
+                                Log.d("imageView of gallery", String.valueOf(imageView));
 
-                                        Log.d("photoUri", String.valueOf(photoUri));
-                                        imageView.setImageURI(photoUri);
-                                        btn_test2.setText("zz");
-                                        Log.d("imageView", String.valueOf(imageView));
+                                }catch(Exception e)
+                                {
 
-                                        galleryAddPic();
-//                                FragmentMessage fragment=new FragmentMessage();
-                                        Bundle bundle=new Bundle();
-                                        FragmentGallery fragment=new FragmentGallery();
-
-                                        if(fragment!=null){
-                                            FragmentManager fragmentManager=getSupportFragmentManager();
-                                            fragmentManager.beginTransaction().replace(R.id.fragment_layout, fragment).commit();
-                                        }
-                                        break;
-                                    case REQUEST_VIDEO_CAPTURE:
-                                        Uri videoUri = result.getData().getData();
-                                        Log.d("videoUri", String.valueOf(photoUri));
-                                        videoView.setVideoURI(videoUri);
-                                        Log.d("videoView", String.valueOf(imageView));
-
-                                        break;
                                 }
+                        }
+                    }
+                });
+
+        //REQUEST_IMAGE_CAPTURE
+        launchSomeActivity2 = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                new ActivityResultCallback<ActivityResult>() {
+                    @Override
+                    public void onActivityResult(ActivityResult result) {
+                        if (result.getResultCode() == Activity.RESULT_OK) {
+                            Log.d("photoUri", String.valueOf(photoUri));
+                            imageView.setImageURI(photoUri);
+                            imageView.setVisibility(View.VISIBLE);
+                            videoView.setVisibility(View.GONE);
+
+                            btn_test2.setText("zz");
+                            Log.d("imageView", String.valueOf(imageView));
+
+                            galleryAddPic();
+//                                FragmentMessage fragment=new FragmentMessage();
+                            Bundle bundle=new Bundle();
+                            FragmentGallery fragment=new FragmentGallery();
+
+                            if(fragment!=null){
+                                FragmentManager fragmentManager=getSupportFragmentManager();
+                                fragmentManager.beginTransaction().replace(R.id.fragment_layout, fragment).commit();
                             }
+                        }
+                    }
+                });
+
+        //REQUEST_VIDEO_CAPTURE
+        launchSomeActivity3 = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                new ActivityResultCallback<ActivityResult>() {
+                    @Override
+                    public void onActivityResult(ActivityResult result) {
+                        Log.d("RESULT VIDEO:", String.valueOf(result.getData()));
+                        if (result.getResultCode() == Activity.RESULT_OK) {
+                            //error happend here
+                            Uri videoUri = result.getData().getData();
+                            Log.d("videoUri", String.valueOf(photoUri));
+                            videoView.setVideoURI(videoUri);
+                            videoView.setVisibility(View.VISIBLE);
+                            imageView.setVisibility(View.GONE);
+
+
+                            videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                                @Override
+                                public void onPrepared(MediaPlayer mp) {
+                                    Toast.makeText(MainActivity.this,
+                                            "the video got ready. \n press the start button", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+
+                            videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                                @Override
+                                public void onCompletion(MediaPlayer mp) {
+                                    //동영상 재생이 완료된 후 호출되는 메소드
+                                    Toast.makeText(MainActivity.this,
+                                            "video play finished", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+
+
+                            Log.d("videoView", String.valueOf(imageView));
                         }
                     }
                 });
@@ -234,9 +300,9 @@ public class MainActivity extends AppCompatActivity {
 //                startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO); //deprecated
                 Log.d("TAKE PHOTOURI:", String.valueOf(photoURI));
                 Log.d("takePictureIntent:", String.valueOf(takePictureIntent));
-                requestCode=REQUEST_IMAGE_CAPTURE;
+
                 photoUri=photoURI;
-                launchSomeActivity.launch(takePictureIntent);
+                launchSomeActivity2.launch(takePictureIntent);
 //                setResult(requestCode, takePictureIntent);
 //                finish();
             }
@@ -249,9 +315,9 @@ public class MainActivity extends AppCompatActivity {
     String currentPhotoPath;
     private void dispatchTakeVideoIntent() {
         Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        Log.d("takeVideoIntenttakeVideoIntent", String.valueOf(takeVideoIntent));
         if (takeVideoIntent.resolveActivity(getPackageManager()) != null) {
-            launchSomeActivity.launch(takeVideoIntent);
-//            startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
+            launchSomeActivity3.launch(takeVideoIntent);
         }
     }
 // TAKE GALLERY IMAGE@

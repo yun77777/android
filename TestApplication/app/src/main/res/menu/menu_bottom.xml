@@ -6,7 +6,7 @@
         android:id="@+id/tab_gallery"
         android:enabled="true"
         android:icon="@android:drawable/ic_menu_gallery"
-        android:title="전화"
+        android:title="갤러리"
         app:showAsAction="ifRoom" />
     <item
         android:id="@+id/tab_camera"
