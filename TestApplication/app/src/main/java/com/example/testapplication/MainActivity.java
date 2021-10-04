@@ -14,6 +14,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -57,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
     ActivityResultLauncher<Intent> launchSomeActivity3;
 
     Uri photoUri;
+    String imageFileName;
 
     static final int REQUEST_IMAGE_CAPTURE = 1;
     static final int REQUEST_TAKE_PHOTO = 2;
@@ -135,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
                             Log.d("imageView", String.valueOf(imageView));
 
                             galleryAddPic();
+
 //                                FragmentMessage fragment=new FragmentMessage();
                             Bundle bundle=new Bundle();
                             FragmentGallery fragment=new FragmentGallery();
@@ -194,7 +197,7 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener(){
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                String [] permissions = {"android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.ACCESS_FINE_LOCATION", "android.permission.READ_PHONE_STATE", "android.permission.SYSTEM_ALERT_WINDOW","android.permission.CAMERA"};
+                String [] permissions = {"android.permission.WRITE_EXTERNAL_STORAGE", "android.permission.READ_EXTERNAL_STORAGE", "android.permission.ACCESS_FINE_LOCATION", "android.permission.READ_PHONE_STATE", "android.permission.SYSTEM_ALERT_WINDOW","android.permission.CAMERA"};
 
                 switch(item.getItemId()){
                     case R.id.tab_gallery://gallery
@@ -204,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
                         dispatchTakeGalleryIntent();
 //                        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_layout, fragment1).commit();
                         return true;
-                    case R.id.tab_video://video
+                    case R.id.tab_video://videorequestPermissions
 //                        int requestCode = 200;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             requestPermissions(permissions, REQUEST_VIDEO_CAPTURE);
@@ -266,22 +269,24 @@ public class MainActivity extends AppCompatActivity {
 
     // END onCreate()
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            Bundle extras = data.getExtras();
-            Bitmap imageBitmap = (Bitmap) extras.get("data");
-            imageView.setImageBitmap(imageBitmap);
-            Log.d("imageView", String.valueOf(imageView));
-        }
-    }
+//    @Override
+//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+//        super.onActivityResult(requestCode, resultCode, data);
+//        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+//            Bundle extras = data.getExtras();
+//            Bitmap imageBitmap = (Bitmap) extras.get("data");
+//            imageView.setImageBitmap(imageBitmap);
+//            Log.d("imageView", String.valueOf(imageView));
+//        }
+//    }
 
 
 
     // TAKE PICTURE@
     private void dispatchTakePictureIntent() {
         Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        Log.d("takePictureIntent:@", String.valueOf(takePictureIntent));
+
         // Ensure that there's a camera activity to handle the intent
         if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
             // Create the File where the photo should go
@@ -330,27 +335,42 @@ public class MainActivity extends AppCompatActivity {
     private File createImageFile() throws IOException {
         // Create an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + "_";
+        imageFileName = "JPEG_" + timeStamp + "_";
+
+        // /storage/emulated/0/Pictures
+//        File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES); //deprecated
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        Log.d("imageFileName", String.valueOf(imageFileName));
         Log.d("storageDir", String.valueOf(storageDir));
         File image = File.createTempFile(
                 imageFileName,  /* prefix */
                 ".jpg",         /* suffix */
                 storageDir      /* directory */
         );
+        Log.d("image@@", String.valueOf(image));
 
         // Save a file: path for use with ACTION_VIEW intents
         currentPhotoPath = image.getAbsolutePath();
+//        currentPhotoPath=String.valueOf(storageDir);
+        Log.d("currentPhotoPath@@", String.valueOf(currentPhotoPath));
+
         return image;
     }
 
     private void galleryAddPic() {
         Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
         File f = new File(currentPhotoPath);
-        Log.d("currentPhotoPath:",currentPhotoPath);
+        Log.d("currentPhotoPath@:",currentPhotoPath);
         Uri contentUri = Uri.fromFile(f);
+//        MediaScannerConnection.scanFile(MainActivity.this, new String[] { f.getAbsolutePath() }, null, null);
+//        Uri.parse("file://" + imageFileName);
+
+
+        Log.d("contentUri:", String.valueOf(contentUri));
         mediaScanIntent.setData(contentUri);
+        Log.d("mediaScanIntent:", String.valueOf(mediaScanIntent));
         this.sendBroadcast(mediaScanIntent);
+        Toast.makeText(this, "the picture saved at the album", Toast.LENGTH_SHORT).show();
     }
 
     @Override
