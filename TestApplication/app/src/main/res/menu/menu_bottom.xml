@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/tab_gallery"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_menu_gallery"
+        android:title="전화"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/tab_camera"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_menu_camera"
+        android:title="카메라"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/tab_video"
+        android:enabled="true"
+        android:icon="@android:drawable/presence_video_busy"
+        android:title="비디오"
+        app:showAsAction="ifRoom" />
+
+</menu>
